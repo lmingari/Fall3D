@@ -1,0 +1,73 @@
+#!/bin/sh
+#---------------------------------------------------------------
+#         UNIX/LINUX SHELL SCRIPT FOR FALL3D SERIAL VERSION
+# --------------------------------------------------------------
+#
+# File: @configure_input@
+# @SCRIPT_WARNING_MESSAGE@
+#
+PROBLEMNAME=$1
+NCPUGROUPS=1
+#
+EXEPROG=Fall3d_ser
+VERSION=@PACKAGE_VERSION@
+#
+if [ -z $PROBLEMNAME ] ; then
+  echo 'Specify the problem name'
+  exit
+fi
+#
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+EXEPATH=@bindir@/$EXEPROG              # Path of the executable
+RUNDIR=@RUNDIR@                        # Run directory
+#
+PROBLEMDIR=$RUNDIR/$PROBLEMNAME        # Problem directory
+#
+if [ ! -x $EXEPATH ] ; then
+  echo Cannot find executable $EXEPATH
+  exit
+fi
+#
+if [ ! -d $PROBLEMDIR ] ; then
+  echo Cannot find PROBLEMDIR=$PROBLEMDIR
+  exit
+fi
+#
+#  1. Paths of Fall3d input files
+#
+FILEINP=$PROBLEMDIR/$PROBLEMNAME.inp     # input file
+FILESRC=$PROBLEMDIR/$PROBLEMNAME.src     # input file (source)
+FILEGRN=$PROBLEMDIR/$PROBLEMNAME.grn     # input file (granulometry)
+FILEDBS=$PROBLEMDIR/$PROBLEMNAME.dbs.nc  # input file (Database, binary)
+#
+# Check existence of input files
+if [ ! -f $FILEINP ] ; then
+  echo Cannot find FILEINP=$FILEINP
+  exit
+fi
+#
+if [ ! -f $FILESRC ] ; then
+  echo Cannot find FILESRC=$FILESRC
+  exit
+fi
+#
+if [ ! -f $FILEGRN ] ; then
+  echo Cannot find FILEGRN=$FILEGRN
+  exit
+fi
+#
+if [ ! -f $FILEDBS ] ; then
+  echo Cannot find FILEDBS=$FILEDBS
+  exit
+fi
+#
+#  2. Paths of Fall3d output files
+#
+FILELOG=$PROBLEMDIR/$PROBLEMNAME.$EXEPROG-$VERSION.log # output file (log info file)
+FILERES=$PROBLEMDIR/$PROBLEMNAME.res                  # output files (netCDF & MP binary)
+FILEPTS=$PROBLEMDIR/$PROBLEMNAME.pts                  # output files (track points)
+#
+#  3. Launches the executable
+#
+$EXEPATH $FILEINP $FILESRC $FILEGRN $FILEDBS $FILELOG $FILERES $FILEPTS $NCPUGROUPS

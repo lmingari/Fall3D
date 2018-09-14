@@ -1,0 +1,239 @@
+  subroutine kappa3
+  !*****************************************************************************
+  !*
+  !*    Computes the diffusion coefficients. Possibilities are:
+  !*
+  !*    modkv = 0: K_v = const
+  !*    modkv = 1: K_v = similarity theory (Ulke,2000)
+  !*    modkv = 2: k_v = surface layer From Jacobson M.Z., Fundamentals of
+  !*                     atmospheric modelling, Cambridge University Press,
+  !*                     1st Edn., New York, 1999
+  !*
+  !*    modkh=0: K_h= const
+  !*    modkh=1: k_h= RAMS
+  !*    modkh=2: k_h= CMAQ
+  !*
+  !*    rl          = monin-obukhov length
+  !*    rich        = richardson number
+  !*    ustar       = friction velocity
+  !*    z0          = roughness length
+  !*    zi          = boundary layer height
+  !*    vptemp      = virtual potential temp.
+  !*
+  !*****************************************************************************
+  use KindType
+  use Numeric
+  use Master
+  implicit none
+  !
+  integer(ip) :: i,j,k
+  real   (rp) :: vkarm,beta1,beta2,gi,alfa,rlamb,rkhmin,rkvmin
+  real   (rp) :: hinf,hsup,lc,Kmh,Kht,Khn,Khn0
+  real   (rp) :: rich,h,zeta,dvdz2,dvxdx,dvxdy,dvydx,dvydy,dXX,Khf,prt,gh,betah
+  !
+  !***  Parameter values
+  !
+  vkarm =  0.4_rp             ! von karman constant
+  beta1 =  9.2_rp             ! empirical parameter from Ulke(2000)
+  beta2 = 13.0_rp             ! empirical parameter from Ulke(2000)
+  gi    = 9.81_rp             ! gravity
+  alfa  =  0.28_rp            ! Smagorinsky parameter in L.E. Kh formula
+  rlamb = 30.0_rp             ! parameter in turb. above ABL
+  rkhmin=  1d2                ! Minimum K_h value
+  rkvmin=  1.0_rp             ! Minimum K_v value above the ABL
+  hinf  =  5.0_rp             ! lowest  h value  (proof value)
+  hsup  =  5d3                ! highest h value  (proof value)
+  Khf   = 8000.0_rp           ! eddy diffusivity at a fixed resolution (CMAQ)
+  !
+  !***  1. Vertical component
+  !
+  if(modkv == 0) then          ! constant
+     do k=2,nz
+        do j=1,ny
+           do i=1,nx
+              rkver(i,j,k) = rkv0
+           end do
+        end do
+     end do
+     !
+  else if(modkv == 1) then    ! similarity
+     do k=2,nz
+        do j=1,ny
+           do i=1,nx
+              !
+              if(k < nz) then
+                 dvdz2 = ((vx(i,j,k+1)-vx(i,j,k-1))/(dz(k)+dz(k-1)))**2 + &
+                      ((vy(i,j,k+1)-vy(i,j,k-1))/(dz(k)+dz(k-1)))**2
+
+                 dvdz2 = max(dvdz2,1e-10_rp)
+                 rich  = gi*((vptemp(i,j,k+1)-vptemp(i,j,k-1))/ &
+                      (dz(k)+dz(k-1)))/(vptemp(i,j,k)*dvdz2)
+              end if
+              h      = min(max(zi(i,j),hinf),hsup)
+              zeta   = zlayer(k)/h
+              !
+              if(zeta < 1.0_rp) then
+                 !                                 Inside the ABL
+                 if(rl(i,j) >= 0.0_rp) then
+                    !                              Stable and Neutral
+                    rkver(i,j,k) = vkarm*ustar(i,j)*zlayer(k)* &
+                         (1.0_rp-zeta)/(1.0_rp+beta1*zlayer(k)/rl(i,j))
+                 else
+                    !                                           Unstable
+                    rkver(i,j,k) = vkarm*ustar(i,j)*zlayer(k)* &
+                         (1.0_rp-zeta)*sqrt(1.0_rp-beta2*zlayer(k)/rl(i,j))
+                 endif
+              else
+                 !                                 Above the ABL
+                 lc = 1.0_rp/((1.0_rp/(vkarm*zlayer(k)))+(1.0_rp/rlamb))
+                 if(rich >= 0.0_rp) then
+                    !                                        Stable
+                    rkver(i,j,k) = lc*lc*sqrt(dvdz2)/(1.0_rp + &
+                         10.0_rp*rich*(1.0_rp+8.0_rp*rich))
+                    rkver(i,j,k) = max(rkver(i,j,k),rkvmin)
+                 else
+                    !                                        Unstable
+                    rkver(i,j,k) = lc*lc*sqrt(dvdz2)*sqrt(1.0_rp-18.0_rp*rich)
+                    rkver(i,j,k) = max(rkver(i,j,k),rkvmin)
+                 endif
+              endif
+           end do
+        end do
+     end do
+     !
+  else if(modkv == 2) then    ! surface layer
+
+     gh    = 11.6_rp              ! Stability constant
+     betah =  7.8_rp              ! Stability constant
+     prt   =  0.95_rp             ! Turbulent Prandtl number
+     do k = 2,nz
+        do j = 1,ny
+           do i = 1,nx
+              zeta = zlayer(k)/rl(i,j)
+              !
+              if(zeta < 0.0_rp) then
+                 !                                  Unstable atmosphere
+                 rkver(i,j,k) = vkarm*ustar(i,j)*zlayer(k)*sqrt(1.0_rp-gh*zeta)/prt
+              else if(zeta > 0.0_rp) then
+                 !                                  Stable atmosphere
+                 rkver(i,j,k) = vkarm*ustar(i,j)*zlayer(k)/(prt+betah*zeta)
+              else
+                 !                                 (zeta==0) Neutral atmosphere
+                 rkver(i,j,k) = vkarm*ustar(i,j)*zlayer(k)/prt
+              end if
+              !         Ensure that K_v = 0 above the PBL (z-->h)
+              h  = min(max(zi(i,j),hinf),hsup)
+              zeta = zlayer(k)/h
+              if( zeta > 1.0_rp) zeta = 1.0_rp
+              rkver(i,j,k) = rkver(i,j,k)*(1.0_rp-zeta)
+              !
+           end do
+        end do
+     end do
+
+  end if
+  !
+  !***  Horizontal component
+  !
+  if(modkh == 0) then          ! constant
+     do k=2,nz
+        do j=1,ny
+           do i=1,nx
+              rkhor(i,j,k) = rkh0
+           end do
+        end do
+     end do
+     !
+  else if(modkh == 1) then     ! RAMS
+     do k=2,nz
+        do j=1,ny
+           do i=1,nx
+              dXX = Hm1(i,j)*dX1
+              if(i == 1) then
+                 dvxdx=(vx(2  ,j,k)-vx(1   ,j,k))/dXX
+                 dvydx=(vy(2  ,j,k)-vy(1   ,j,k))/dXX
+              else if(i == nx) then
+                 dvxdx=(vx(nx ,j,k)-vx(nx-1,j,k))/dXX
+                 dvydx=(vy(nx ,j,k)-vy(nx-1,j,k))/dXX
+              else
+                 dvxdx=(vx(i+1,j,k)-vx(i-1 ,j,k))/(2.0_rp*dXX)
+                 dvydx=(vy(i+1,j,k)-vy(i-1 ,j,k))/(2.0_rp*dXX)
+              end if
+              !
+              if(j == 1) then
+                 dvxdy=(vx(i,2  ,k)-vx(i,1   ,k))/dX2
+                 dvydy=(vy(i,2  ,k)-vy(i,1   ,k))/dX2
+              else if(j == ny) then
+                 dvxdy=(vx(i,ny ,k)-vx(i,ny-1,k))/dX2
+                 dvydy=(vy(i,ny ,k)-vy(i,ny-1,k))/dX2
+              else
+                 dvxdy=(vx(i,j+1,k)-vx(i,j-1 ,k))/(2.0_rp*dX2)
+                 dvydy=(vy(i,j+1,k)-vy(i,j-1 ,k))/(2.0_rp*dX2)
+              end if
+              !
+              ! Parameter in RAMS formula
+              Kmh   = 0.075_rp*((dXX*dX2)**(2.0_rp/3.0_rp))
+              rkhor(i,j,k) = Csh*Csh*dXX*dX2*sqrt((dvxdy+dvydx)**2+ &
+                   2.0_rp*(dvxdx**2+dvydy**2))
+              !
+              !***               Here assume a Pr=1
+              !
+              rkhor(i,j,k) = 1.0_rp*max(rkhor(i,j,k),Kmh   )
+              rkhor(i,j,k) =        max(rkhor(i,j,k),rkhmin)
+           end do
+        end do
+     end do
+     !
+  else if(modkh == 2) then     ! CMAQ
+     !
+     !***   For large grid sizes counteract the numerical diffusion
+     !***   It is assumed Kf=8000 m2/s for Dx=4km = 3.6d-2 deg of meridian
+     !***   (3.6d-2/sin(colat) deg of parallel)
+     !
+     SELECT CASE(coord_sys)
+     case('LON-LAT')
+        Khn0 = 3.6d-2
+     case('UTM')
+        Khn0 = 4000_rp
+     END SELECT
+     !
+     do k=2,nz
+        do j=1,ny
+           do i=1,nx
+              dXX = Hm1(i,j)*dX1
+              if(i == 1) then
+                 dvxdx=(vx(2  ,j,k)-vx(1   ,j,k))/dXX
+                 dvydx=(vy(2  ,j,k)-vy(1   ,j,k))/dXX
+              else if(i == nx) then
+                 dvxdx=(vx(nx ,j,k)-vx(nx-1,j,k))/dXX
+                 dvydx=(vy(nx ,j,k)-vy(nx-1,j,k))/dXX
+              else
+                 dvxdx=(vx(i+1,j,k)-vx(i-1 ,j,k))/(2.0_rp*dXX)
+                 dvydx=(vy(i+1,j,k)-vy(i-1 ,j,k))/(2.0_rp*dXX)
+              end if
+              !
+              if(j == 1) then
+                 dvxdy=(vx(i,2  ,k)-vx(i,1   ,k))/dX2
+                 dvydy=(vy(i,2  ,k)-vy(i,1   ,k))/dX2
+              else if(j == ny) then
+                 dvxdy=(vx(i,ny ,k)-vx(i,ny-1,k))/dX2
+                 dvydy=(vy(i,ny ,k)-vy(i,ny-1,k))/dX2
+              else
+                 dvxdy=(vx(i,j+1,k)-vx(i,j-1 ,k))/(2.0_rp*dX2)
+                 dvydy=(vy(i,j+1,k)-vy(i,j-1 ,k))/(2.0_rp*dX2)
+              end if
+              !
+              Kht = alfa**2*dXX*dX2*sqrt( (dvxdx-dvydy)**2 + (dvydx+dvxdy)**2 )
+              !
+              Khn = Khf*(Khn0/Hm1(i,j)/dx)*(Khn0/dy)
+              !
+              rkhor(i,j,k) = (1.0_rp/Kht) + (1.0_rp/Khn)
+              rkhor(i,j,k) = max(1.0_rp/rkhor(i,j,k),rkhmin)
+           end do
+        end do
+     end do
+     !
+  end if
+  !
+  return
+end subroutine kappa3

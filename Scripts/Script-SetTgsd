@@ -1,0 +1,58 @@
+#!/bin/sh
+#---------------------------------------------------------------
+#                UNIX/LINUX SCRIPT FOR SETTGSD UTILITY
+# --------------------------------------------------------------
+#
+# File: Scripts/Script-SetTgsd.  Generated from Script-SetTgsd.in by configure.
+# DO NOT MODIFY (it is generated automatically by configure)
+#
+#
+PROBLEMNAME=$1
+#
+EXEPROG=SetTgsd
+VERSION=7.0
+#
+if [ -z $PROBLEMNAME ] ; then
+  echo 'Specify the problem name'
+  exit
+fi
+#
+echo ' '
+echo '*** Launching SetTgsd for '${PROBLEMNAME}' ***'
+echo ' '
+#
+#
+prefix=/home/mingari/Fall3d
+exec_prefix=${prefix}
+EXEPATH=${exec_prefix}/bin/$EXEPROG             # Path of the executable
+RUNDIR=/home/mingari/Fall3d/Runs/$PROBLEMNAME          # Run directory
+#
+if [ ! -x $EXEPATH ] ; then
+  echo Cannot find executable $EXEPATH
+  exit
+fi
+#
+if [ ! -d $RUNDIR ] ; then
+  echo Cannot find RUNDIR=$RUNDIR
+  exit
+fi
+#
+#  1. Paths of SetDbs input files
+#
+FILEINP=$RUNDIR/$PROBLEMNAME.inp               # input file
+#
+# Check existence of input files
+if [ ! -f $FILEINP ] ; then
+  echo Cannot find FILEINP=$FILEINP
+  exit
+fi
+#
+#
+#  2. Paths of SetDbs output files
+#
+FILELOG=$RUNDIR/$PROBLEMNAME.$EXEPROG.log          # output file (log info file)
+FILETGS=$RUNDIR/$PROBLEMNAME.tgsd                  # output file (TGSD; granulometry)
+#
+#  3. Launches the executable
+#
+$EXEPATH $FILELOG $FILEINP $FILETGS

@@ -1,0 +1,91 @@
+#!/bin/sh
+#---------------------------------------------------------------
+#                UNIX/LINUX SCRIPT FOR FALL3D2GMT UTILITY
+# --------------------------------------------------------------
+#
+# File: @configure_input@
+# @SCRIPT_WARNING_MESSAGE@
+#
+PROBLEMNAME=$1
+#
+EXEPROG=Fall3d2GMT
+VERSION=@PACKAGE_VERSION@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+EXEPATH=@bindir@/$EXEPROG             # Path of the executable
+RUNDIR=@RUNDIR@
+DATADIR=@DATADIR@
+#
+SCRIPTFALL3D2GMT=Fall3d2GMT
+SCRIPTFALL3D2ANI=Fall3d2animation
+#
+if [ ! -x $EXEPATH ] ; then
+  echo Cannot find executable $EXEPATH
+  exit
+fi
+#
+if [ -z $PROBLEMNAME ] ; then
+  echo 'Specify the problem name'
+  exit
+else
+  echo ' '
+  echo '*** Launching Fall3d2GMT for '$PROBLEMNAME' ***'
+  echo ' '
+fi
+#
+#
+PROBLEMDIR=$RUNDIR/$PROBLEMNAME       # Problem directory
+#
+#
+if [ ! -d $PROBLEMDIR ] ; then
+  echo Cannot find PROBLEMDIR=$PROBLEMDIR
+  exit
+fi
+#
+OUTDIR=$PROBLEMDIR/GMT
+#
+if [ -d $OUTDIR ] ; then
+  rm -f $OUTDIR/*
+else
+  mkdir -p $OUTDIR
+fi
+#
+# Input file
+FILEINP=$PROBLEMDIR/$PROBLEMNAME.inp
+#
+# Output file
+FILELOG=$PROBLEMDIR/$PROBLEMNAME.$EXEPROG.log
+FILENC=$PROBLEMDIR/$PROBLEMNAME.res.nc
+#
+#  Launches the executable Fall3d2GMT to write the script
+#
+$EXEPATH $FILELOG $FILEINP $FILENC $PROBLEMNAME $PROBLEMDIR $OUTDIR
+#
+#  Launches the Script
+#
+echo "*** Launching Fall3d2GMT Script"
+
+if [ ! -x $OUTDIR/$SCRIPTFALL3D2GMT ] ; then
+  echo Error: Program $EXEPROG could not generate the executable script $OUTDIR/$SCRIPTFALL3D2GMT
+  exit
+fi
+#
+$OUTDIR/$SCRIPTFALL3D2GMT
+#
+#  Remove ps files
+#
+echo "*** Removing ps files"
+rm -f $OUTDIR/*.ps
+#
+#  Makes animatied gif
+#
+if [ ! -x $OUTDIR/$SCRIPTFALL3D2ANI ] ; then
+  echo Error: Program $EXEPROG could not generate the executable script $OUTDIR/$SCRIPTFALL3D2ANI
+  exit
+fi
+#
+echo "*** Making animated gifs"
+#
+$OUTDIR/$SCRIPTFALL3D2ANI
+#
+echo "*** END"

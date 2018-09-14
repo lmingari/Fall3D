@@ -1,0 +1,256 @@
+!***************************************************************
+!*
+!*		Module for master operations
+!*
+!***************************************************************
+MODULE Master
+  use KindType
+  IMPLICIT NONE
+  SAVE
+  !
+  !***  Version of input file
+  !
+  character(len=3) :: version = '7.0'
+  !
+  !***  Time related variables
+  !
+  integer(ip)   :: ibyr,ibmo,ibdy,ibhr,it
+  real   (rp)   :: timeb,timee,dt,time_lag
+  !
+  !***  Mesh related variables
+  !
+  character(len=10) :: coord_sys
+  integer(ip) :: nx,ny,nz,nt
+  real   (rp) :: lonmin,latmin,lonmax,latmax
+  real   (rp) :: xmin  ,ymin  ,xmax  ,ymax
+  !
+  !***  Memory storage
+  !
+  integer(ip) :: memo
+  !
+  !***  Arrays
+  !
+  real(rp), allocatable :: time(:)          ! time(nt)     YYYYMMDDHHSSSS
+  real(rp), allocatable :: timesec(:)       ! timesec(nt)
+  real(rp), allocatable :: zlayer(:)        ! zlayer(nz)
+  real(rp), allocatable :: lonp  (:,:)      ! lonp (nx,ny)
+  real(rp), allocatable :: latp  (:,:)      ! latp (nx,ny)
+  real(rp), allocatable :: xutm  (:,:)      ! xutm (nx,ny)
+  real(rp), allocatable :: yutm  (:,:)      ! yutm (nx,ny)
+  real(rp), allocatable :: topg  (:,:)      ! topg (nx,ny)
+  real(rp), allocatable :: ldu   (:,:)      ! ldu  (nx,ny)
+  real(rp), allocatable :: soil  (:,:)      ! soil (nx,ny)      Soil category
+  real(rp), allocatable :: vegfra(:,:)      ! vegfra(nx,ny)     vegetation fraction
+  !
+  real(rp), allocatable :: ust   (:,:)      ! ust  (nx,ny)
+  real(rp), allocatable :: pblh  (:,:)      ! pblh (nx,ny)
+  real(rp), allocatable :: L     (:,:)      ! L    (nx,ny)
+  real(rp), allocatable :: rmol  (:,:)      ! RMOL (nx,ny)   Inv. Monin Obukhov
+  real(rp), allocatable :: znt   (:,:)      ! ZNT  (nx,ny)   Roughness length
+  real(rp), allocatable :: spd10 (:,:)      ! SPD10(nx,ny)   Wind speed at 10m
+  real(rp), allocatable :: smoi  (:,:)      ! smoi (nx,ny)   soil moisture (one soil layer only)
+  real(rp), allocatable :: prat  (:,:)      ! prat (nx,ny)   precipitation rate
+  !
+  real(rp), allocatable :: u     (:,:,:)    ! u    (nx,ny,nz)
+  real(rp), allocatable :: v     (:,:,:)    ! v    (nx,ny,nz)
+  real(rp), allocatable :: w     (:,:,:)    ! w    (nx,ny,nz)
+  real(rp), allocatable :: T     (:,:,:)    ! T    (nx,ny,nz)
+  real(rp), allocatable :: Tv    (:,:,:)    ! Tv   (nx,ny,nz)
+  real(rp), allocatable :: Tp    (:,:,:)    ! Tp   (nx,ny,nz)
+  real(rp), allocatable :: qv    (:,:,:)    ! qv   (nx,ny,nz)
+  real(rp), allocatable :: ro    (:,:,:)    ! ro   (nx,ny,nz)
+  real(rp), allocatable :: p     (:,:,:)    ! p    (nx,ny,nz)
+  !
+  character(len=3),allocatable :: zutm(:,:)
+  !
+CONTAINS
+  !
+  !
+  !
+  subroutine getmem
+    !**********************************************************************
+    !*
+    !*  Allocates memory for arrays related to nx,ny,nz
+    !*
+    !**********************************************************************
+    implicit none
+
+    allocate(time(nt))
+    time = 0.
+    memo = memo + rp*nt
+
+    allocate(timesec(nt))
+    timesec = 0.
+    memo = memo + rp*nt
+
+    allocate(zlayer(nz))
+    zlayer = 0.
+    memo = memo + rp*nz
+
+    allocate(latp(nx,ny))
+    latp = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(lonp(nx,ny))
+    lonp = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(xutm(nx,ny))
+    xutm = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(yutm(nx,ny))
+    yutm = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(zutm(nx,ny))
+    zutm = '   '
+    memo = memo + 3*nx*ny
+
+    allocate(topg(nx,ny))
+    topg = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(ldu(nx,ny))
+    ldu  = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(soil(nx,ny))
+    soil = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(vegfra(nx,ny))
+    vegfra = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(u(nx,ny,nz))
+    u = 0.
+    memo = memo + rp*nx*ny*nz
+
+    allocate(v(nx,ny,nz))
+    v = 0.
+    memo = memo + rp*nx*ny*nz
+
+    allocate(w(nx,ny,nz))
+    w = 0.
+    memo = memo + rp*nx*ny*nz
+
+    allocate(T(nx,ny,nz))
+    T = 0.
+    memo = memo + rp*nx*ny*nz
+
+    allocate(Tv(nx,ny,nz))
+    Tv = 0.
+    memo = memo + rp*nx*ny*nz
+
+    allocate(Tp(nx,ny,nz))
+    Tp = 0.
+    memo = memo + rp*nx*ny*nz
+
+    allocate(qv(nx,ny,nz))
+    qv = 0.
+    memo = memo + rp*nx*ny*nz
+
+    allocate(ro(nx,ny,nz))
+    ro = 0.
+    memo = memo + rp*nx*ny*nz
+
+    allocate(p(nx,ny,nz))
+    p = 0.
+    memo = memo + rp*nx*ny*nz
+
+    allocate(ust(nx,ny))
+    ust = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(pblh(nx,ny))
+    pblh = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(L(nx,ny))
+    L = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(smoi(nx,ny))
+    smoi = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(rmol(nx,ny))
+    rmol = 0.
+    memo = memo + rp*nx*ny
+  
+    allocate(znt(nx,ny))
+    znt  = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(spd10(nx,ny))
+    spd10 = 0.
+    memo = memo + rp*nx*ny
+
+    allocate(prat(nx,ny))
+    prat = 0.
+    memo = memo + rp*nx*ny
+    !
+  end subroutine getmem
+  !
+  !
+  !
+  real(rp) function get_val(xodem,yodem,nxdem,nydem,dxdem,dydem,dem,x,y)
+    !***********************************************************
+    !*
+    !*   Interpolates dem at the (x,y) point
+    !*
+    !***********************************************************
+    implicit none
+    !
+    integer(ip) :: nxdem,nydem
+    real   (rp) :: xodem,yodem,dxdem,dydem,dem(nxdem,nydem)
+    real   (rp) :: x,y,xdem,ydem
+    !
+    logical     :: xfound,yfound
+    integer(ip) :: iydem,ixdem,ixpt,iypt
+    real   (rp) :: s,t,st,shape(4)
+    !
+    xfound = .false.
+    yfound = .false.
+    !
+    do ixdem = 1,nxdem-1
+       xdem = xodem + (ixdem-1)*dxdem
+       if((x.ge.xdem).and.(x.le.(xdem+dxdem))) then
+          ixpt   = ixdem
+          xfound = .true.
+       end if
+    end do
+    if(.not.xfound) call runend('get_val: value not found')
+    !
+    do iydem = 1,nydem-1
+       ydem = yodem + (iydem-1)*dydem
+       if((y.ge.ydem).and.(y.le.(ydem+dydem))) then
+          iypt   = iydem
+          yfound = .true.
+       end if
+    end do
+    if(.not.yfound) call runend('get_val: value not found')
+    !
+    !*** Interpolates
+    !
+    s = (x-(xodem+(ixpt-1)*dxdem))/dxdem      ! parameter s in (0,1)
+    s = 2.0_rp*s-1.0_rp                           ! parameter s in (-1,1)
+    t = (y-(yodem+(iypt-1)*dydem))/dydem      ! parameter t in (0,1)
+    t = 2.0_rp*t-1.0_rp                           ! parameter t in (-1,1)
+    st = s*t
+    !
+    shape(1)=(1.0_rp-t-s+st)*0.25_rp                     ! 4         3
+    shape(2)=(1.0_rp-t+s-st)*0.25_rp                     !
+    shape(3)=(1.0_rp+t+s+st)*0.25_rp                     !
+    shape(4)=(1.0_rp+t-s-st)*0.25_rp                     ! 1         2
+    !
+    get_val = shape(1)*dem(ixpt  ,iypt  ) +  &
+         shape(2)*dem(ixpt+1,iypt  ) +  &
+         shape(3)*dem(ixpt+1,iypt+1) +  &
+         shape(4)*dem(ixpt  ,iypt+1)
+    !
+    return
+  end function get_val
+  !
+END MODULE Master

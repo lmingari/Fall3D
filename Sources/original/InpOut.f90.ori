@@ -1,0 +1,215 @@
+!***************************************************************
+!*
+!*		Module for input/output operations
+!*
+!***************************************************************
+MODULE InpOut
+  use KindType
+  use Master, only : ncmax
+  IMPLICIT NONE
+  SAVE
+  !
+  !***  File logical units
+  !
+  integer(ip), parameter  :: ninp = 10     ! input        file
+  integer(ip), parameter  :: nsrc = 11     ! source       file
+  integer(ip), parameter  :: ngrn = 12     ! granulometry file
+  integer(ip), parameter  :: ndbs = 13     ! meteo dbs    file (netCDF binary)
+  integer(ip), parameter  :: nlst = 14     ! log          file
+  integer(ip), parameter  :: nres = 15     ! results      file (netCDF binary)
+  integer(ip), parameter  :: ntps = 16     ! track pts    file
+  integer(ip), parameter  :: ntem = 17     ! plume tempe  file
+  !
+  !***  File names
+  !
+  character(len=s_file) :: finp,fsrc,fgrn,fdbs,flst,fres,fpts
+  character(len=s_file) :: frst,fres_nc,ftem
+  !
+  !***  List of Warnings
+  !
+  integer(ip), parameter :: maxwarn = 100
+  integer(ip)            :: nwarn = 0
+  character(len=s_mess)  :: warning(maxwarn)
+  !
+  !***  Output type
+  !
+  logical :: print_3d_var      = .false.
+  logical :: print_class       = .false.
+  logical :: track_points      = .false.
+  logical :: terrain_following = .false. ! output of 3D variables/cuts given terrain following(T) or a.s.l.(F)
+  !
+  !***  Postprocess counter
+  !
+  integer(ip) :: ippfile = 0
+  !
+  !***  Tracking points
+  !
+  integer(ip) :: npts
+  logical              , allocatable :: use_pts(:)
+  character(len=s_name), allocatable :: name_pts(:)
+  character(len=s_file), allocatable :: name_file_pts(:)
+  !
+  integer(ip), allocatable :: ipts(:)        ! ipts(npts)
+  integer(ip), allocatable :: jpts(:)
+  real   (rp), allocatable :: xpts(:)
+  real   (rp), allocatable :: ypts(:)
+  real   (rp), allocatable :: spts(:)
+  real   (rp), allocatable :: tpts(:)
+  !
+  !***  Decide which variables to print
+  !
+  logical :: out_load   = .true.
+  logical :: out_thick  = .true.
+  logical :: out_concg  = .true.
+  logical :: out_pm05g  = .true.
+  logical :: out_pm10g  = .true.
+  logical :: out_pm20g  = .true.
+  logical :: out_cummc  = .true.
+  logical :: out_pm05c  = .true.
+  logical :: out_pm10c  = .true.
+  logical :: out_pm20c  = .true.
+  logical :: out_fl     = .true.
+  logical :: out_aot05  = .true.
+  !
+  !***  NetCDF headers (note that these change from this version on. Postprocess
+  !**   program should be compatible with older code versions). Limited to 12
+  !***  characters for compatibility with programs like ncview.
+  !
+  integer(ip) :: ncID
+  !
+  character(len=40 ) :: attr_units
+  character(len=100) :: attr_title,attr_desc
+  !
+  character(len=8) :: lon_nc_name   = 'lon'
+  character(len=8) :: lat_nc_name   = 'lat'
+  character(len=8) :: x_nc_name     = 'x'
+  character(len=8) :: y_nc_name     = 'y'
+  character(len=8) :: alt_nc_name   = 'alt'
+  character(len=8) :: time_nc_name  = 'time'
+  character(len=8) :: np_nc_name    = 'np'
+  !
+  character(len=s_name) :: timeh_nc_name = 'times'
+  character(len=s_name) :: diam_nc_name  = 'diameter'
+  character(len=s_name) :: rhop_nc_name  = 'density'
+  character(len=s_name) :: sphe_nc_name  = 'sphericity'
+  !
+  character(len=s_name) :: topog_nc_name        = 'TOPOGRAPHY'
+  character(len=s_name) :: cload_nc_name        = 'LOAD'
+  character(len=s_name) :: cload_ic_name(ncmax) = 'LOAD_'      ! LOAD_CLASSxx
+  character(len=s_name) :: cwet_nc_name         = 'WET'
+  character(len=s_name) :: cwet_ic_name(ncmax)  = 'WET_'       ! WET_CLASSxx
+  character(len=s_name) :: thick_nc_name        = 'THICKNESS'
+  !
+  character(len=s_name) :: concg_nc_name = 'C_GRND'
+  character(len=s_name) :: concz_nc_name = 'CONC_Z'
+  character(len=s_name) :: pm05g_nc_name = 'C_PM05_GRND'
+  character(len=s_name) :: pm10g_nc_name = 'C_PM10_GRND'
+  character(len=s_name) :: pm20g_nc_name = 'C_PM20_GRND'
+  !
+  character(len=s_name) :: cummc_nc_name        = 'COL_MASS'
+  character(len=s_name) :: cummc_ic_name(ncmax) = 'COL_MASS_'     ! COL_CLASS_xxx
+  character(len=s_name) :: pm05c_nc_name        = 'COL_MASSPM05'
+  character(len=s_name) :: pm10c_nc_name        = 'COL_MASSPM10'
+  character(len=s_name) :: pm20c_nc_name        = 'COL_MASSPM20'
+  !
+  integer(ip),parameter :: nflevel = 8
+  character(len=s_name) :: flevel_nc_name(nflevel) = &
+       (/'C_FL050','C_FL100','C_FL150','C_FL200','C_FL250', 'C_FL300', 'C_FL350', 'C_FL400' /)
+  real(rp)              :: flevel_value  (nflevel) = &
+       (/  50.0_rp, 100.0_rp, 150.0_rp, 200.0_rp, 250.0_rp,  300.0_rp,  350.0_rp,  400.0_rp /)
+  !
+  character(len=s_name) :: AOT05_nc_name = 'AOD'
+  character(len=s_name) :: EXT05_nc_name = 'EXT_COEF'
+  character(len=s_name) :: nconc_nc_name = 'N_CON'
+  !
+  character(len=s_name) :: conce_nc_name        = 'CON'
+  character(len=s_name) :: conce_ic_name(ncmax) = 'CON_'   ! CON_CLASSxx
+  character(len=s_name) :: velu_nc_name  = 'U_TOT'
+  character(len=s_name) :: velv_nc_name  = 'V_TOT'
+  !
+  character(len=s_name) :: maggr_nc_name = 'M_AGGREGATES'
+  !
+  integer(ip)  :: nx_nc_ID
+  integer(ip)  :: ny_nc_ID
+  integer(ip)  :: nz_nc_ID
+  integer(ip)  :: nt_nc_ID
+  integer(ip)  :: lon_nc_ID
+  integer(ip)  :: lat_nc_ID
+  integer(ip)  :: x_nc_ID
+  integer(ip)  :: y_nc_ID
+  integer(ip)  :: alt_nc_ID
+  integer(ip)  :: time_nc_ID
+  integer(ip)  :: np_nc_ID
+  !
+  integer(ip)  :: timeh_nc_ID
+  integer(ip)  :: diam_nc_ID
+  integer(ip)  :: rhop_nc_ID
+  integer(ip)  :: sphe_nc_ID
+  integer(ip)  :: topog_nc_ID
+  integer(ip)  :: cload_nc_ID
+  integer(ip)  :: cload_ic_ID(ncmax)
+  integer(ip)  :: cwet_nc_ID
+  integer(ip)  :: cwet_ic_ID(ncmax)
+  integer(ip)  :: thick_nc_ID
+  integer(ip)  :: conce_nc_ID
+  integer(ip)  :: conce_ic_ID(ncmax)
+  integer(ip)  :: cummc_nc_ID
+  integer(ip)  :: cummc_ic_ID(ncmax)
+  integer(ip)  :: flevel_nc_ID(nflevel)
+  integer(ip)  :: concg_nc_ID
+  integer(ip)  :: concz_nc_ID
+  integer(ip)  :: pm05g_nc_ID
+  integer(ip)  :: pm10g_nc_ID
+  integer(ip)  :: pm20g_nc_ID
+  integer(ip)  :: pm05c_nc_ID
+  integer(ip)  :: pm10c_nc_ID
+  integer(ip)  :: pm20c_nc_ID
+  integer(ip)  :: aot05_nc_ID
+  integer(ip)  :: ext05_nc_ID
+  integer(ip)  :: maggr_nc_ID
+  integer(ip)  :: nconc_nc_ID
+  integer(ip)  :: velu_nc_ID
+  integer(ip)  :: velv_nc_ID
+  !
+  !
+  !
+CONTAINS
+  !
+  subroutine getmem3
+    !**********************************************************************
+    !*
+    !*  Allocates memory for arrays related to npts
+    !*
+    !**********************************************************************
+    implicit none
+    !
+    allocate(use_pts(npts))
+    use_pts = .false.
+
+    allocate(name_pts(npts))
+    name_pts = ' '
+
+    allocate(name_file_pts(npts))
+    name_file_pts = ' '
+
+    allocate(ipts(npts))
+    ipts = 0
+
+    allocate(jpts(npts))
+    jpts = 0
+
+    allocate(xpts(npts))
+    xpts = 0.0_rp
+
+    allocate(ypts(npts))
+    ypts = 0.0_rp
+
+    allocate(spts(npts))
+    spts = 0.0_rp
+
+    allocate(tpts(npts))
+    tpts = 0.0_rp
+
+  end subroutine getmem3
+  !
+END MODULE InpOut

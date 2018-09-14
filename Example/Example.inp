@@ -1,0 +1,319 @@
+!********************************************* 
+!
+!   FALL3D EXAMPLE INPUT FILE
+!   VERSION: 7.0
+!
+!   NOTE: This is an example of input file. It
+!         does not correspond to any real case.
+!         To run a new problem copy this file
+!         to the RUNS/NAME folder and modify it
+!         to define the run
+!
+!********************************************* 
+!
+! --------------------------------------------
+!  Blocks read by Fall3d and utility programs
+! --------------------------------------------
+!
+ TIME_UTC
+   !
+   !    YEAR                                : value (YYYY)
+   !    MONTH                               : value (MM)
+   !    DAY                                 : value (DD)
+   !    BEGIN_METEO_DATA_(HOURS_AFTER_00)   : value
+   !    TIME_STEP_METEO_DATA_(MIN)          : value
+   !    END_METEO_DATA_(HOURS_AFTER_00)     : value
+   !    ERUPTION_START_(HOURS_AFTER_00)     : ndt values (start time of each eruptive phase)
+   !    ERUPTION_END_(HOURS_AFTER_00)       : value 
+   !    RUN_END_(HOURS_AFTER_00)            : value  
+   !    RESTART  options                    : YES/NO                  
+   !  
+   YEAR = 2008
+   MONTH = 04
+   DAY = 29
+   BEGIN_METEO_DATA_(HOURS_AFTER_00) = 0
+   TIME_STEP_METEO_DATA_(MIN) = 60
+   END_METEO_DATA_(HOURS_AFTER_00) = 24 
+   ERUPTION_START_(HOURS_AFTER_00) = 0 3.5
+   ERUPTION_END_(HOURS_AFTER_00) = 7  
+   RUN_END_(HOURS_AFTER_00) = 10 
+   RESTART = NO  
+ ! 
+ GRID  
+   !
+   !    COORDINATES options         : LON-LAT/UTM  (LON-LAT recommendend)  
+   !    LON_LAT                     : only read if COORDINATES=LON-LAT
+   !    LONMIN                      : value
+   !    LONMAX                      : value
+   !    LATMIN                      : value
+   !    LATMAX                      : value
+   !    LON_VENT                    : value
+   !    LAT_VENT                    : value
+   !    VENT_HEIGHT_(M)             : value
+   !    NX                          : value
+   !    NY                          : value
+   !    ZLAYER_(M)                  : list of values or  FROM xxx TO xxx INCREMENT xxx
+   !           
+   COORDINATES = LON-LAT          
+   LON_LAT                     
+      LONMIN = 14.0
+      LONMAX = 16.0
+      LATMIN = 36.5 
+      LATMAX = 38.5
+      LON_VENT = 15.0
+      LAT_VENT = 37.5
+      VENT_HEIGHT_(M) = 3000.
+   NX = 51
+   NY = 51
+   ZLAYER_(M)  FROM 0. TO 8000. INCREMENT 500.
+!
+! --------------------------------------------
+!  Block read by SetTGsd utility program
+! --------------------------------------------
+!
+ GRANULOMETRY    
+   !
+   !   DISTRIBUTION options  : GAUSSIAN/BIGAUSSIAN    
+   !   NUMBER_OF_CLASSES     : value
+   !   FI_MEAN               : value. A second value is used if DISTRIBUTION=BIGAUSSIAN 
+   !   FI_DISP               : value. A second value is used if DISTRIBUTION=BIGAUSSIAN  
+   !   FI_RANGE              : 2 values  
+   !   DENSITY_RANGE         : 2 values (linear interpolation)
+   !   SPHERICITY_RANGE      : 2 values (linear interpolation)
+   !              
+   DISTRIBUTION = GAUSSIAN            
+   NUMBER_OF_CLASSES = 6                         
+   FI_MEAN = 2.5                                   
+   FI_DISP = 1.5                    
+   FI_RANGE = 2. 7.
+   DENSITY_RANGE = 1200 2300
+   SPHERICITY_RANGE = 0.9 0.9 
+!
+! --------------------------------------------
+!  Blocks read by SetSrc utility program
+! --------------------------------------------
+!
+ SOURCE
+   !
+   !  SOURCE_TYPE options: POINT/SUZUKI/PLUME/RESUSPENSION
+   !
+   SOURCE_TYPE = plume
+   ! 
+   POINT_SOURCE            
+      !
+      !   This block is read only if SOURCE_TYPE = POINT
+      !      HEIGHT_ABOVE_VENT_(M)        : ndt values          
+      !      MASS_FLOW_RATE_(KGS) options : ndt values/ESTIMATE-MASTIN/ESTIMATE-DEGRUYTER/ESTIMATE-WOODHOUSE
+      !
+      HEIGHT_ABOVE_VENT_(M) = 3000. 6000.             
+      MASS_FLOW_RATE_(KGS)  = ESTIMATE-WOODHOUSE
+      !
+   SUZUKI_SOURCE        
+      !
+      !   This block is read only if SOURCE_TYPE = SUZUKI
+      !      HEIGHT_ABOVE_VENT_(M)        : ndt values          
+      !      MASS_FLOW_RATE_(KGS) options : ndt values/ESTIMATE-MASTIN/ESTIMATE-DEGRUYTER/ESTIMATE-WOODHOUSE
+      !      A                            : ndt values 
+      !      L                            : ndt values 
+      !
+      HEIGHT_ABOVE_VENT_(M) = 3000. 6000.             
+      MASS_FLOW_RATE_(KGS)  = ESTIMATE-WOODHOUSE
+      A = 4.                                   
+      L = 5.                                    
+      ! 
+   PLUME_SOURCE 
+      !
+      !   This block is read only if SOURCE_TYPE = PLUME
+      !      SOLVE_PLUME_FOR options : MFR/HEIGHT
+      !      MFR_SEARCH_RANGE        : Give n1 and n2, where: 10**n1 < MFR < 10**n2. Only used if SOLVE_PLUME_FOR = MFR          
+      !      HEIGHT_ABOVE_VENT_(M)   : ndt values. Only used if SOLVE_PLUME_FOR = MFR
+      !      MASS_FLOW_RATE_(KGS)    : ndt values. Only used if SOLVE_PLUME_FOR = HEIGHT
+      !      EXIT_VELOCIY_(MS)       : ndt values
+      !      EXIT_TEMPERATURE_(K)    : ndt values
+      !      EXIT_WATER_FRACTION_(%) : ndt values
+      !
+      SOLVE_PLUME_FOR =  MFR                
+      MFR_SEARCH_RANGE = 3.0  7.0           
+      HEIGHT_ABOVE_VENT_(M) = 6000. 
+      MASS_FLOW_RATE_(KGS)  = 1d3 1d4          
+      EXIT_VELOCIY_(MS) = 200.              
+      EXIT_TEMPERATURE_(K) = 1073.        
+      EXIT_WATER_FRACTION_(%) = 1.      
+      !
+    RESUSPENSION_SOURCE
+      !
+      !   This block is read only if SOURCE_TYPE =  RESUSPENSION
+      !      MAX_RESUSPENSION_SIZE_(MIC)  : value
+      !      DEPOSIT_THRESHOLD_(KGM2)     : value
+      !      MAX_INJECTION_HEIGHT_(M)     : value
+      !      EMISSION_SCHEME options      : WESTPHAL/MARTICORENA/SHAO
+      !      EMISSION_FACTOR options      : value
+      !      THRESHOLD_UST                : value. Only used if  EMISSION_SCHEME = WESTPHAL
+      !      MOISTURE_CORRECTION options  : YES/NO
+      !
+      MAX_RESUSPENSION_SIZE_(MIC) = 100
+      DEPOSIT_THRESHOLD_(KGM2) = 1
+      MAX_INJECTION_HEIGHT_(M) = 1000 			       
+      EMISSION_SCHEME =  WESTPHAL
+      EMISSION_FACTOR = 1.0           
+      THRESHOLD_UST = 0.3                  
+      MOISTURE_CORRECTION = no             
+      !
+ AGGREGATION
+    !
+    !  Note: this block is not read in the RESUSPENSION mode
+    !  AGGREGATION_MODEL options : NONE/PERCENTAGE/CORNELL/COSTA
+    !  FI_AGGREGATES             : value
+    !  DENSITY_AGGREGATES        : value
+    !  VSET_FACTOR               : value
+    !  PERCENTAGE_(%)            : value. Only used if AGGREGATION_MODEL = PERCENTAGE
+    !  FRACTAL_EXPONENT          : value. Only used if AGGREGATION_MODEL = COSTA
+    !
+    AGGREGATION_MODEL = Cornell
+    FI_AGGREGATES = 2.
+    DENSITY_AGGREGATES = 350.
+    VSET_FACTOR = 1.0
+    PERCENTAGE_(%) = 20.
+    FRACTAL_EXPONENT = 2.99              
+    !
+ AEROSOLS
+    !
+    !  Note: this block is not read in the RESUSPENSION mode
+    !  SO2 options         : YES/NO
+    !  SO2_PERCENTAGE_(%)  : value
+    !
+    SO2 = no
+    SO2_PERCENTAGE_(%) = 1. 
+    !
+  GRAVITY_CURRENT
+    !
+    !  Gravity current model based on Suzuki & Koyaguchi (2009)
+    !  GRAVITY_CURRENT  options  : YES/NO
+    !  C_FLOW_RATE               : value (0.4d4 for tropical eruptions; 1d4 for mid-latitude). Only read if GRAVITY_CURRENT = YES
+    !  LAMBDA_GRAV               : value. Only read if GRAVITY_CURRENT = YES
+    !  K_ENTRAIN                 : value. Only read if GRAVITY_CURRENT = YES
+    !  BRUNT_VAISALA             : value. Only read if GRAVITY_CURRENT = YES
+    !
+    GRAVITY_CURRENT = no
+    C_FLOW_RATE   = 1d4
+    LAMBDA_GRAV   = 0.2
+    K_ENTRAIN     = 0.1
+    BRUNT_VAISALA = 0.02
+!
+! --------------------------------------------
+!  Block read by Fall3d
+! --------------------------------------------
+!
+ FALL3D
+   !
+   !  TERMINAL_VELOCITY_MODEL   options       : ARASTOOPOUR/GANSER/WILSON/DELLINO
+   !  VERTICAL_TURBULENCE_MODEL options       : CONSTANT/SIMILARITY/SURFACE_LAYER 
+   !  VERTICAL_DIFFUSION_COEFFICIENT_(M2/S)   : value. Only used if VERTICAL_TURBULENCE_MODEL = CONSTANT
+   !  HORIZONTAL_TURBULENCE_MODEL options     : CONSTANT/RAMS/CMAQ
+   !  RAMS_CS                                 : value. Only used if HORIZONTAL_TURBULENCE_MODEL = RAMS 
+   !  HORIZONTAL_DIFFUSION_COEFFICIENT_(M2/S) : value. Only used if HORIZONTAL_TURBULENCE_MODEL = CONSTANT
+   !  WET_DEPOSITION options                  : YES/NO 
+   !
+   TERMINAL_VELOCITY_MODEL = ganser              
+   VERTICAL_TURBULENCE_MODEL = CONSTANT           
+   VERTICAL_DIFFUSION_COEFFICIENT_(M2/S)   = 500.   
+   HORIZONTAL_TURBULENCE_MODEL = CONSTANT           
+   RAMS_CS = 0.3
+   HORIZONTAL_DIFFUSION_COEFFICIENT_(M2/S) = 5000.  
+   WET_DEPOSITION = yes
+   !
+ OUTPUT
+   !
+   !  POSTPROCESS_TIME_INTERVAL_(HOURS)    : value
+   !  POSTPROCESS_3D_VARIABLES  options    : YES/NO
+   !  POSTPROCESS_CLASSES       options    : YES/NO
+   !  TRACK_POINTS              options    : YES/NO. If YES read list of points from file
+   !
+   POSTPROCESS_TIME_INTERVAL_(HOURS) = 1.
+   POSTPROCESS_3D_VARIABLES = YES                
+   POSTPROCESS_CLASSES = YES                      
+   TRACK_POINTS = YES        
+!
+! ----------------------------------------------
+!  Blocks read by Postprocess utility program(s)
+! ----------------------------------------------
+!
+POSTPROCESS
+  !
+  !   LONMIN                       : value
+  !   LONMAX                       : value
+  !   LATMIN                       : value
+  !   LATMAX                       : value
+  !   MAP_VARIABLE_NAME    options : YES/NO
+  !   UNITS                options : 
+  !   CONTOUR_LEVELS               : range of values
+  !
+  CROP_DOMAIN                     
+      LONMIN = 14.0
+      LONMAX = 16.0
+      LATMIN = 36.5 
+      LATMAX = 38.5
+  !
+  !  Meteo
+  !
+  MAP_TEMPERATURE = yes
+  MAP_VELOCITY = yes 
+  Z_CUTS_(M) = 1000 5000
+  !
+  !   Time independent variables
+  !
+  MAP_TOPOGRAPHY = no                                      
+      UNITS = M                                              
+      CONTOUR_LEVELS =  1. 100. 500. 1000. 1500. 2000. 2500. 
+  !
+  !   Deposit variables
+  !
+  MAP_TOTAL_LOAD = no                                    
+      UNITS = KG/M2                                           
+      CONTOUR_LEVELS =  0.1  0.5   1. 5.  10. 50. 
+  !
+  MAP_WET_LOAD = no                                    
+      UNITS = KG/M2                                           
+      CONTOUR_LEVELS =  0.1  0.5   1. 5.
+  !
+  MAP_CLASS_LOAD = no                                      
+      UNITS = KG/M2                                           
+      CONTOUR_LEVELS =  0.1  0.5   1. 5.  10. 50.
+  !
+  MAP_CLASS_WET = yes                                      
+      UNITS = KG/M2                                           
+      CONTOUR_LEVELS =  0.1  0.5   1. 5. 
+  !
+  MAP_DEPOSIT_THICKNESS = no                               
+      UNITS = MM                                            (Possibilities: MM/CM/M)
+      CONTOUR_LEVELS      = 0.1  0.5  1. 5. 10.         
+  !
+  !   Ground level variables
+  !
+  MAP_CONCE_GROUND = no                                    
+      UNITS = GR/M3                                           
+      CONTOUR_LEVELS  =  0.001 0.01 0.1 1.
+  !
+  MAP_PMxx_GROUND = no                                       
+      UNITS = GR/M3                                            
+      CONTOUR_LEVELS  =  1d-5 1d-4 1d-3 
+  !
+  !   Airborne variables
+  !
+  MAP_COLUMN_MASS = no                                   
+      UNITS = GR/M2                                           
+      CONTOUR_LEVELS  =  1. 10. 100.     
+  !
+  MAP_COLUMN_PMxx = no                                    
+      UNITS = GR/M2                                          
+      CONTOUR_LEVELS  =  0.1 1. 10. 100.
+  !
+  MAP_FLIGHT_LEVEL = no                                     
+      UNITS = GR/M3                                        
+      CONTOUR_LEVELS  =  0.001 0.01 0.1
+  !
+  MAP_AOD = no                                     
+      UNITS = NONE                                        
+      CONTOUR_LEVELS  =  0.1 0.25 0.5 0.75 1 2
+
+

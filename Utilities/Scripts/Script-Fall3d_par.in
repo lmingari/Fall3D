@@ -1,0 +1,90 @@
+#!/bin/sh
+#---------------------------------------------------------------
+#         UNIX/LINUX SHELL SCRIPT FOR FALL3D PARALLEL VERSION
+# --------------------------------------------------------------
+#
+# File: @configure_input@
+# @SCRIPT_WARNING_MESSAGE@
+#
+#
+PROBLEMNAME=$1
+NCPU=$2
+NCPUGROUPS=$3
+#
+MPIEXEC=@MPIEXEC@
+EXEPROG=Fall3d_par
+VERSION=@PACKAGE_VERSION@
+#
+if [ -z $PROBLEMNAME ] ; then
+  echo 'Error: Specify the problem name'
+  echo 'Usage: Script-Fall3d_par PROBLEMNAME NCPU NCPUGROUPS'
+  exit
+fi
+#
+if [ -z $NCPU ] ; then
+  echo 'Error: Specify NCPU'
+  echo 'Usage: Script-Fall3d_par PROBLEMNAME NCPU NCPUGROUPS'
+  exit
+fi
+#
+if [ -z $NCPUGROUPS ] ; then
+  echo 'Error: Specify NCPUGROUPS'
+  echo 'Usage: Script-Fall3d_par PROBLEMNAME NCPU NCPUGROUPS'
+  exit
+fi
+#
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+EXEPATH=@bindir@/$EXEPROG             # Path of the executable
+RUNDIR=@RUNDIR@
+#
+PROBLEMDIR=$RUNDIR/$PROBLEMNAME       # Problem directory
+#
+if [ ! -x $EXEPATH ] ; then
+  echo Cannot find executable $EXEPATH
+  exit
+fi
+#
+if [ ! -d $PROBLEMDIR ] ; then
+  echo Cannot find PROBLEMDIR=$PROBLEMDIR
+  exit
+fi
+#
+#
+#  1. Paths of Fall3d input files
+#
+FILEINP=$PROBLEMDIR/$PROBLEMNAME.inp     # input file
+FILESRC=$PROBLEMDIR/$PROBLEMNAME.src     # input file (source)
+FILEGRN=$PROBLEMDIR/$PROBLEMNAME.grn     # input file (granulometry)
+FILEDBS=$PROBLEMDIR/$PROBLEMNAME.dbs.nc  # input file (Database, binary)
+#
+# Check existence of input files
+if [ ! -f $FILEINP ] ; then
+  echo Cannot find FILEINP=$FILEINP
+  exit
+fi
+#
+if [ ! -f $FILESRC ] ; then
+  echo Cannot find FILESRC=$FILESRC
+  exit
+fi
+#
+if [ ! -f $FILEGRN ] ; then
+  echo Cannot find FILEGRN=$FILEGRN
+  exit
+fi
+#
+if [ ! -f $FILEDBS ] ; then
+  echo Cannot find FILEDBS=$FILEDBS
+  exit
+fi
+#
+#  2. Paths of Fall3d output files
+#
+FILELOG=$PROBLEMDIR/$PROBLEMNAME.$EXEPROG-$VERSION.log # output file (log info file)
+FILERES=$PROBLEMDIR/$PROBLEMNAME.res                  # output files (netCDF & MP binary)
+FILEPTS=$PROBLEMDIR/$PROBLEMNAME.pts                  # output files (track points)
+#
+#  3. Launches the executable
+#
+$MPIEXEC -n $NCPU $EXEPATH $FILEINP $FILESRC $FILEGRN $FILEDBS $FILELOG $FILERES $FILEPTS $NCPUGROUPS

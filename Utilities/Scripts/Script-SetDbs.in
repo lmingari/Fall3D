@@ -1,0 +1,100 @@
+#!/bin/sh
+#---------------------------------------------------------------
+#                UNIX/LINUX SCRIPT FOR SETDBS UTILITY
+# --------------------------------------------------------------
+#
+# File: @configure_input@
+# @SCRIPT_WARNING_MESSAGE@
+#
+#
+PROBLEMNAME=$1
+#
+EXEPROG=SetDbs
+VERSION=@PACKAGE_VERSION@
+#
+if [ -z $PROBLEMNAME ] ; then
+  echo 'Specify the problem name'
+  exit
+fi
+#
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+EXEPATH=@bindir@/$EXEPROG             # Path of the executable
+RUNDIR=@RUNDIR@
+DATADIR=@DATADIR@
+#
+PROBLEMDIR=$RUNDIR/$PROBLEMNAME       # Problem directory
+#
+if [ ! -x $EXEPATH ] ; then
+  echo Cannot find executable $EXEPATH
+  exit
+fi
+#
+if [ ! -d $PROBLEMDIR ] ; then
+  echo Cannot find PROBLEMDIR=$PROBLEMDIR
+  exit
+fi
+#
+TYPEDATA=$2
+if [ "x$TYPEDATA" = "x" ] ; then
+  echo 'Specify the data type'
+  exit
+elif [ $TYPEDATA = 'debug' ] ; then
+   MODEL=debug
+elif [ $TYPEDATA = 'profile' ] ; then
+   MODEL=profile
+elif [ $TYPEDATA = 'calmet62' ] ; then
+   MODEL=calmet62
+elif [ $TYPEDATA = 'ncep2' ] ; then
+   MODEL=ncep2
+elif [ $TYPEDATA = 'ncep1' ] ; then
+   MODEL=ncep1
+elif [ $TYPEDATA = 'wrf' ] ; then
+   MODEL=wrf
+elif [ $TYPEDATA = 'arpa' ] ; then
+   MODEL=arpa
+elif [ $TYPEDATA = 'eta' ] ; then
+   MODEL=eta
+elif [ $TYPEDATA = 'gfs1deg' ] ; then
+   MODEL=gfs
+elif [ $TYPEDATA = 'gfs05deg' ] ; then
+   MODEL=gfs
+elif [ $TYPEDATA = 'ncepFNL' ] ; then
+   MODEL=gfs
+elif [ $TYPEDATA = 'eraIn' ] ; then
+   MODEL=ecmwf
+elif [ $TYPEDATA = 'era40' ] ; then
+   MODEL=ecmwf
+else
+    echo Error: TYPEDATA $TYPEDATA is not supported
+    exit
+fi
+#
+echo ' '
+echo '*** Launching SetDbs for '$PROBLEMNAME $TYPEDATA' ***'
+echo ' '
+#
+#  1. Paths of SetDbs input files
+#
+FILEINP=$PROBLEMDIR/$PROBLEMNAME.inp     # input file
+#
+if [ $MODEL = 'debug' ] ; then
+  FILEDAT=$PROBLEMDIR/$PROBLEMNAME           # debug
+elif [ $MODEL = 'profile' ] ; then
+  FILEDAT=$PROBLEMDIR/$PROBLEMNAME.profile   # profile
+elif [ $MODEL = 'calmet62' ] ; then
+  FILEDAT=$PROBLEMDIR/$PROBLEMNAME.calmet62  # CALMET62
+else
+  FILEDAT=$DATADIR/$TYPEDATA-nc/$PROBLEMNAME.$TYPEDATA.nc    # meteo file
+fi
+#
+FILETOP=$PROBLEMDIR/$PROBLEMNAME.top         # regional topography file
+#
+#  2. Paths of SetDbs output files
+#
+FILELOG=$PROBLEMDIR/$PROBLEMNAME.$EXEPROG.log   # output file (log info file)
+FILEDBS=$PROBLEMDIR/$PROBLEMNAME.dbs.nc       # output file (Database,binary)
+#
+#  3. Launches the executable
+#
+$EXEPATH $FILELOG $FILEINP $FILEDAT $FILEDBS $FILETOP $MODEL

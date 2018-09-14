@@ -1,0 +1,82 @@
+#!/bin/sh
+#---------------------------------------------------------------
+#                UNIX/LINUX SCRIPT FOR SETSRC UTILITY
+# --------------------------------------------------------------
+#
+# File: Scripts/Script-SetSrc.  Generated from Script-SetSrc.in by configure.
+# DO NOT MODIFY (it is generated automatically by configure)
+#
+#
+PROBLEMNAME=$1
+MODELNAME=FALL3D
+#
+EXEPROG=SetSrc
+VERSION=7.0
+#
+if [ -z $PROBLEMNAME ] ; then
+  echo 'Specify the problem name'
+  exit
+fi
+#
+echo ' '
+echo '*** Launching SetSrc for '${PROBLEMNAME}' ***'
+echo ' '
+#
+prefix=/home/mingari/Fall3d
+exec_prefix=${prefix}
+EXEPATH=${exec_prefix}/bin/$EXEPROG             # Path of the executable
+RUNDIR=/home/mingari/Fall3d/Runs/$PROBLEMNAME          # Run directory
+#
+if [ ! -x $EXEPATH ] ; then
+  echo Cannot find executable $EXEPATH
+  exit
+fi
+#
+if [ ! -d $RUNDIR ] ; then
+  echo Cannot find RUNDIR=$RUNDIR
+  exit
+fi
+#
+#
+#----------------------------------------------
+#  No need to change anything below this line
+#----------------------------------------------
+#
+#  1. Paths of SetSrc input files
+#
+FILEINP=$RUNDIR/$PROBLEMNAME.inp               # input file
+FILETGS=$RUNDIR/$PROBLEMNAME.tgsd              # TGSD (granulometry file)
+FILEDBS=$RUNDIR/$PROBLEMNAME.dbs.nc            # meteo file
+FILEDEP=$RUNDIR/$PROBLEMNAME.deposit.res.nc    # deposit file (used for resuspension only)
+#
+# Check existence of input files
+if [ ! -f $FILEINP ] ; then
+  echo Cannot find FILEINP=$FILEINP
+  exit
+fi
+#
+if [ ! -f $FILETGS ] ; then
+  echo Cannot find FILETGS=$FILETGS
+  exit
+fi
+#
+if [ ! -f $FILEDBS ] ; then
+  echo Cannot find FILEDBS=$FILEDBS
+  exit
+fi
+#
+# FILEDEP in not mandatory
+#if [ ! -f $FILEDEP ] ; then
+#  echo Cannot find FILEDEP=$FILEDEP
+#  exit
+#fi
+#
+#  2. Paths of SetSrc output files
+#
+FILELOG=$RUNDIR/$PROBLEMNAME.$EXEPROG.log  # output file (log info file)
+FILEGRN=$RUNDIR/$PROBLEMNAME.grn           # output file (modifyed granulometry)
+FILESRC=$RUNDIR/$PROBLEMNAME.src           # output file (source)
+#
+#  3. Launches the executable
+#
+$EXEPATH $MODELNAME $FILELOG $FILEINP $FILETGS $FILEGRN $FILESRC $FILEDBS $FILEDEP

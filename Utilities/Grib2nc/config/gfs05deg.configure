@@ -1,0 +1,15 @@
+---------------------------------------------------------
+                   PROGRAM GRIB2NC                       
+                   FALL3D Version 7.0                  
+                                                         
+  Copyright (C) 2013 GNU General Public License version 3
+  Arnau Folch, Antonio Costa, Giovanni Macedonio         
+  See licence for details                                
+---------------------------------------------------------
+  Starting date    : 09-30-2013 at time: 06:02:15
+
+  MODEL      : 
+  GRIB  cnf  : /gpfs/projects/bsc21/bsc21365/Fall3d/Data/gfs05deg-nc/Caulle-fcst.gfs05deg.nc
+  Date       : /gpfs/projects/bsc21/bsc2
+  nc    file : /gpfs/projects/bsc21/bsc21365/Fall3d/Data/gfs05deg-tmp
+  GRIB  path : gfs05deg

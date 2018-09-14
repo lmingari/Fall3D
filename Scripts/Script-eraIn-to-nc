@@ -1,0 +1,215 @@
+#!/bin/csh -f
+#--------------------------------------------------------------------------
+#   Script to convert ERAInterim reanalysis grib files to netCDF.
+#
+#   Requires:
+#     - wgrib and the utility program Grib2nc
+#   Data:
+#     - http://apps.ecmwf.int/datasets/data/interim_full_daily/
+#   Format:
+#     - GRIB1
+#   Pressure levels:
+#     - 37, starting at 1 mb (48 km aprox)
+#     - 1 2 3 5 7 10 20 30 50 70 100 125 150 175 200 225 250 300 350 400 450 500 550 600 650 700 750 775 800 825 850 875 900 925 950 975 1000
+#   Comments:
+#     - Files are downoladed separately for pressure, non-pressure (surface) and invariant
+#       variables. Required variables are:
+#          * Pressure: Geopotential, Relative humidity, Temperature, U component of wind, V component of wind, Vertical velocity
+#          * Surface: 10 metre U wind component, 10 metre V wind component, 2 metre temperature (analysis: 00:00:00, 06:00:00, 12:00:00, 18:00:00)
+#          * Surface: Boundary layer height, Total Precipitation (forecast: 00:00:00, 12:00:00)
+#          * Invariant: Geopotential, Land-sea mask
+#     - Files must be concatenated: cat file1 file 2 file 3 > problemname.grib
+#     - ECMWF allows data download in spatial subsets and different resolutions. For this reason the model bounds and number of
+#       points can vary and must be specifyed in this script. The file eraIn.configure is modifyed accordingly in this script
+#
+#--------------------------------------------------------------------------
+#
+# File: Scripts/Script-eraIn-to-nc.  Generated from Script-eraIn-to-nc.in by configure.
+#
+set SCRIPTNAM=Script-eraIn-to-nc
+set EXEPROG=Grib2nc
+set wgrib=NOTFOUND
+set prefix=/home/mingari/Fall3d
+set exec_prefix=${prefix}
+set EXEPATH=${exec_prefix}/bin/$EXEPROG             # Path of the executable
+set RUNDIR=/home/mingari/Fall3d/Runs
+set DATADIR=/home/mingari/Fall3d/Data
+set VER=7.0
+set PROBLEMNAME=$1
+set GRIBCONFDIR=/home/mingari/Fall3d/Utilities/Grib2nc/config
+#
+########################################################################
+#
+#    ************** USER DEFINED PARAMETERS ******************
+#
+#  List of timesteps to decode (YYMMDDHH)
+#
+set timesteps="01010100 01010106 01010112"     # put as many as required
+#
+#  Domain (subset download is possible) and model resolution. Values are used to
+#  modify the file era40.configure accordingly
+#
+set lonmin=-37.5
+set lonmax=65
+set latmin=20
+set latmax=52.5
+set nx=42
+set ny=14
+#
+#
+#  File names and paths
+#
+set Gribcnf=${GRIBCONFDIR}/eraIn.configure            # Model configure file
+set GRIBNAME=${DATADIR}/eraIn-grib/${PROBLEMNAME}.grib    # Original grib file (concatened)
+set NCNAME=${DATADIR}/eraIn-nc/${PROBLEMNAME}.eraIn.nc   # nc output file
+set LOGNAME=${DATADIR}/eraIn-nc/Grib2nc.log               # Grib2nc log output file
+#
+set TMP=${DATADIR}/eraIn-tmp       # tmp folder
+set format=-bin                    # -bin or -text
+#
+#
+#  You don't need to change anything below this line
+#
+#############################################################
+#
+if ( ${PROBLEMNAME} == '' ) then
+  echo 'Usage: '${SCRIPTNAM}' PROBLEMNAME'
+  exit
+else
+  echo ' '
+  echo '*** Launching Script-eraIn-to-nc for '${PROBLEMNAME}' ***'
+  echo '*** Time steps: '${timesteps}
+  echo ' '
+endif
+#
+if ( ! -r ${Gribcnf} ) then
+  echo 'Error: cannot open file:' ${Gribcnf}
+  exit
+endif
+#
+#  1. Decoding using wgrib
+#
+#
+#   1.3. Extract the date YYMMDDHH from the timesteps list
+#
+set nt=-1
+foreach step ( ${timesteps} )
+  set nt=`expr ${nt} + 1`
+  if( ${nt} == 0 ) then
+     set date1 = ${step}
+  endif
+end
+
+set run_wgrib=1
+if( ${run_wgrib} == 1 ) then
+#
+#  1.1. Creates the temporary folder
+#
+if( -d ${TMP} ) then
+  rm -r ${TMP}
+endif
+mkdir ${TMP}
+#
+#   1.2. Creates the inventory file
+#
+set inv_file=${TMP}/all.inv
+${wgrib} -s ${GRIBNAME} > ${inv_file}
+
+#
+#   1.4. Decode variables
+#
+set time = 0
+foreach time_instant ( $timesteps )
+#
+#  Invariants
+#
+  foreach var ( Z:sfc LSM:sfc )   # List of invariants
+    set OUTPUT=${TMP}/${var}.${time}
+    if( ${var} == Z:sfc) then
+       set var = "Z"
+       set var2 = "sfc"
+    else if( ${var} == LSM:sfc) then
+       set var = "LSM"
+       set var2 = "sfc"
+    endif
+    grep ":${var}" ${inv_file} | grep "${var2}" | ${wgrib} -i ${format} ${GRIBNAME} -o ${OUTPUT}
+  end
+#
+#  2D variables
+#
+  foreach var ( U10:sfc V10:sfc T2:sfc BLH:sfc )   # List of 2D variables
+    set OUTPUT=${TMP}/${var}.${time}
+    if( ${var} == U10:sfc) then
+       set var = "10U"
+       set var2d = "sfc:anl"
+       set time_in = ${time_instant}
+    else if( ${var} == V10:sfc) then
+       set var = "10V"
+       set var2d = "sfc:anl"
+       set time_in = ${time_instant}
+    else if( ${var} == T2:sfc) then
+       set var = "2T"
+       set var2d = "sfc:anl"
+       set time_in = ${time_instant}
+    else if( ${var} == BLH:sfc) then
+       set var = "BLH"
+#      Variable given with time lag
+       set yy = `echo ${time_instant} | awk '{print substr($0,1,6)}'`
+       set xx = `echo ${time_instant} | awk '{print substr($0,7,2)}'`
+       if( ${xx} == "00" || ${xx} == "12" ) then
+           set var2d = "sfc:3hr"
+           set time_in = ${time_instant}
+       else if( ${xx} == "06" ) then
+           set var2d = "sfc:6hr"
+           set time_in = ${yy}00
+       else if( ${xx} == "18" ) then
+           set var2d = "sfc:6hr"
+           set time_in = ${yy}12
+       endif
+    endif
+    grep ":${var}" ${inv_file} | grep "${time_in}" | grep "${var2}" | ${wgrib} -i ${GRIBNAME} ${format} -o ${OUTPUT}
+  end
+#
+#   3D variables
+#
+  foreach var ( Z R T U V W )        # List of 3D variables
+  foreach lev (1 2 3 5 7 10 20 30 50 70 100 125 150 175 200 225 250 300 350 400 450 500 550 600 650 700 750 775 800 825 850 875 900 925 950 975 1000 )
+      set OUTPUT=${TMP}/${var}.${time}.${lev}
+      grep ":${var}:" ${inv_file} | grep ":${lev} mb" | grep "${time_instant}" | ${wgrib} -i ${GRIBNAME} ${format} -o ${OUTPUT}
+     end
+  end
+#
+set time = `expr $time + 6`
+end
+endif
+#
+#  2. Runs Grib2nc
+#
+#
+#  Gets the number of steps and modifies the eraIn.configure accordingly
+#
+set nt=-1
+foreach step ( ${timesteps} )
+  set nt=`expr ${nt} + 1`
+end
+set GribcnfTMP=${Gribcnf}.tmp
+cat ${Gribcnf} | awk -v nt2="$nt" -v lonmin2="$lonmin" -v lonmax2="$lonmax" -v latmin2="$latmin" -v latmax2="$latmax" -v nx2="$nx" -v ny2="$ny" '{ \
+         if(index($0,"! subset lonmin")!=0) {print "lonmin "lonmin2"        ! subset lonmin"} \
+    else if(index($0,"! subset lonmax")!=0) {print "lonmax "lonmax2"        ! subset lonmax"} \
+    else if(index($0,"! subset latmin")!=0) {print "latmin "latmin2"        ! subset latmin"} \
+    else if(index($0,"! subset latmax")!=0) {print "latmax "latmax2"        ! subset latmax"} \
+    else if(index($0,"! subset nx")!=0)     {print "nx "nx2"                ! subset nx"} \
+    else if(index($0,"! subset ny")!=0)     {print "ny "ny2"                ! subset ny"} \
+    else if(index($0,"! Number of time steps")!=0) {print "nt "nt2"        ! Number of time steps"} \
+    else {print $0} \
+    }' > ${GribcnfTMP}
+mv ${GribcnfTMP} ${Gribcnf}
+#
+set run_Grib2nc=1
+if( ${run_Grib2nc} == 1 ) then
+ ${EXEPATH} ${date1} ${LOGNAME} ${Gribcnf} ${NCNAME} ${TMP} eraIn
+endif
+#
+#  3. Removes the TMP folder
+#
+rm -rf ${TMP}

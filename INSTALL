@@ -1,0 +1,58 @@
+# Information for installing Fall3d 7.x
+#
+# Copyright (C) 2013 Arnau Folch, Antonio Costa an Giovanni Macedonio
+#
+# See the COPYING file for copying and redistribution conditions.
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.
+#
+
+
+Installation Requisites
+***********************
+
+Fall3d is written in Fortran 90 and links the external library netCDF.
+It was tested un UNIX/Linux platforms including MacOS.
+
+Fall can be compiled for running in serial mode (one processor) and
+parallel mode (multiple processor and/or clusters based on MPI).
+
+For compiling the serial version you need:
+
+ *) Fortran 90 compiler (eg: ifort,gfortran, xlf90, etc.)
+ *) Library netCDF installed on your machine (versions 3.6.*, 4.* or later).
+    NETCDF library is available from: http://www.unidata.ucar.edu/netcdf/
+
+
+In addition, for compiling the parallel version (optional), you need
+
+ *) MPI or OpenMPI installed on you machine with Fortran compilation
+    enabled (command mpif90 available).
+
+
+Installation Instructions
+*************************
+
+Sources of Fall3d-7.0 are distributed as gzipped tar archive in a
+file named fall3d-7.0.tar.gz available at the following URLs:
+
+  http://www.bsc.es/projects/earthscience/fall3d/
+  http://datasim.ov.ingv.it/Fall3d.html
+
+After you obtained file fall3d-7.0.tar.gz, copy it in a directory and unpack
+the tarball with the command:
+
+    $ tar zxvf fall3d-7.0.tar.gz
+
+This creates the directory fall3d-7.0 containing all the Fall3d sources,
+scripts and the manual.
+
+For more information refer to the pdf version of the manual
+(file fall3d-7.0.pdf), located in the directory fall3d-7.0/Manual
